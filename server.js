@@ -67,7 +67,7 @@ app.use(express.static('public'));
 app.use('/driver_app', express.static('public/driver_app'));
 app.use('/pm_portal', express.static('public/pm_portal'));
 
-// Auth decorators
+// Auth middleware
 const loginRequired = (req, res, next) => {
   if (!req.session.user) {
     return res.status(401).json({ error: 'Not authenticated' });
@@ -95,11 +95,11 @@ const adminRequired = (req, res, next) => {
 
 app.post('/api/auth/login', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
 
     // Proxy to auth service
     const response = await axios.post(`${AUTH_SERVICE_URL}/api/auth/login`, {
-      username,
+      email,
       password
     });
 
@@ -494,4 +494,5 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`AES Logistics Express server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Auth service: ${AUTH_SERVICE_URL}`);
 });

@@ -201,8 +201,15 @@ app.post('/api/incoming/scan_page', loginRequired, upload.single('photo'), async
 
     const photoPath = req.file.path;
 
-    // Extract text and PO number from image
-    const ocrResult = await ocr.extractPOFromImage(photoPath);
+    // TEMPORARILY DISABLED: Extract text and PO number from image
+    // const ocrResult = await ocr.extractPOFromImage(photoPath);
+
+    // For testing, skip OCR and just accept the photo
+    const ocrResult = {
+      success: true,
+      poNumber: 'MANUAL_ENTRY',
+      text: 'OCR disabled for testing'
+    };
 
     // Initialize session slip data if needed
     if (!req.session.slip) {
@@ -223,7 +230,7 @@ app.post('/api/incoming/scan_page', loginRequired, upload.single('photo'), async
       success: true,
       pageNumber: req.session.slip.photos.length,
       ocrResult: ocrResult,
-      message: ocrResult.success ? 'PO extracted successfully' : 'Could not extract PO number - please verify manually'
+      message: 'Photo accepted (OCR disabled for testing)'
     });
   } catch (error) {
     console.error('Scan error:', error);

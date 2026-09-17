@@ -1,5 +1,6 @@
 const express = require('express');
 const session = require('express-session');
+const FileStore = require('session-file-store')(session);
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -43,8 +44,15 @@ app.use(cors({
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
-// Session middleware
+// Ensure sessions directory exists
+const sessionsDir = path.join(__dirname, 'sessions');
+if (!fs.existsSync(sessionsDir)) {
+  fs.mkdirSync(sessionsDir, { recursive: true });
+}
+
+// Session middleware with file storage for persistence
 app.use(session({
+  store: new FileStore({ dir: sessionsDir }),
   secret: process.env.FLASK_SECRET_KEY || 'dev-secret-key',
   resave: false,
   saveUninitialized: true,

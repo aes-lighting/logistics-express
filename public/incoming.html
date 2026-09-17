@@ -233,12 +233,12 @@
 
         <div class="form-group">
           <label for="projectNumber">Project Number</label>
-          <input type="text" id="projectNumber" placeholder="e.g., 25066" readonly>
+          <input type="text" id="projectNumber" placeholder="e.g., 25066">
         </div>
 
         <div class="form-group">
           <label for="poSuffix">PO Suffix</label>
-          <input type="text" id="poSuffix" placeholder="e.g., 99" readonly>
+          <input type="text" id="poSuffix" placeholder="e.g., 99">
         </div>
 
         <div class="form-group">
@@ -295,6 +295,21 @@
         extractBtn.disabled = false;
       }
     });
+
+    // Enable lookup when project number is filled
+    projectNumber.addEventListener('input', () => {
+      lookupBtn.disabled = !projectNumber.value;
+      checkUploadReady();
+    });
+
+    // Enable upload when both project number and po suffix are filled
+    poSuffix.addEventListener('input', () => {
+      checkUploadReady();
+    });
+
+    function checkUploadReady() {
+      uploadBtn.disabled = !projectNumber.value || !poSuffix.value;
+    }
 
     // Extract PO from image
     extractBtn.addEventListener('click', async () => {
@@ -364,8 +379,13 @@
 
     // Upload
     uploadBtn.addEventListener('click', async () => {
-      if (!photoFile || !projectNumber.value || !poSuffix.value) {
-        alert('Please complete all steps first');
+      if (!projectNumber.value || !poSuffix.value) {
+        alert('Please enter Project Number and PO Suffix');
+        return;
+      }
+
+      if (!photoFile) {
+        alert('Please select a photo');
         return;
       }
 
@@ -422,7 +442,7 @@
 
       extractBtn.disabled = true;
       lookupBtn.disabled = true;
-      uploadBtn.disabled = true;
+      checkUploadReady();
 
       document.getElementById('extractResult').style.display = 'none';
       document.getElementById('lookupResult').style.display = 'none';

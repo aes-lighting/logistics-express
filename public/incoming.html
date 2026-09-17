@@ -386,7 +386,7 @@
 
         <div class="form-group">
           <label for="projectNumber">Project Number *</label>
-          <input type="text" id="projectNumber" maxlength="5" placeholder="e.g., 12345" required>
+          <input type="text" id="projectNumber" maxlength="5" placeholder="e.g., 12345" required onblur="lookupProjectNameAuto()">
         </div>
 
         <div class="form-group">
@@ -397,6 +397,7 @@
         <div class="form-group">
           <label for="projectName">Project Name *</label>
           <input type="text" id="projectName" placeholder="e.g., LED Panels" required>
+          <small style="color:#7f8c8d; margin-top:5px; display:block;">Looks up automatically based on project number</small>
         </div>
 
         <div class="button-group">
@@ -615,6 +616,36 @@
         scanBtn.innerHTML = 'Scan →';
       }
     }
+
+async function lookupProjectNameAuto() {
+  const projectNumber = document.getElementById('projectNumber').value.trim();
+
+  if (!projectNumber) {
+    return; // Silent - user might still be typing
+  }
+
+  try {
+    const fileServiceUrl = 'https://file-service-production-4d03.up.railway.app';
+    const apiKey = 'yvgDtDvqWY2L8A5gb8k4btePZRW20b9m3ur0vgpinZDoF1pcqgjwmhofS8Z0Yxfb';
+    
+    const response = await fetch(`${fileServiceUrl}/api/projects/${projectNumber}`, {
+      headers: {
+        'X-API-Key': apiKey
+      }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.projectName) {
+        document.getElementById('projectName').value = data.projectName;
+        console.log('Project name loaded from file service:', data.projectName);
+      }
+    }
+    // Silently fail - user can enter manually if lookup doesn't work
+  } catch (error) {
+    console.warn('Project lookup failed:', error.message);
+  }
+}
 
     function confirmJob() {
       const projectNumber = document.getElementById('projectNumber').value.trim();

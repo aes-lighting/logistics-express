@@ -189,6 +189,28 @@ app.post('/api/upload', loginRequired, upload.single('file'), (req, res) => {
 // INCOMING INVENTORY ENDPOINTS
 // ============================================
 
+app.get('/api/incoming/project/:projectNumber', loginRequired, async (req, res) => {
+  try {
+    const { projectNumber } = req.params;
+
+    if (!projectNumber) {
+      return res.status(400).json({ error: 'Project number required' });
+    }
+
+    // Look up project name from file service
+    const projectName = await fileService.getProjectName(projectNumber);
+
+    if (projectName) {
+      res.json({ success: true, projectNumber, projectName });
+    } else {
+      res.status(404).json({ error: 'Project not found' });
+    }
+  } catch (error) {
+    console.error('Project lookup error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.post('/api/incoming/scan_page', loginRequired, upload.single('photo'), async (req, res) => {
   try {
     if (!req.file) {
@@ -235,7 +257,7 @@ app.post('/api/incoming/scan_page', loginRequired, upload.single('photo'), async
   }
 });
 
-app.post('/api/incoming/confirm_job', loginRequired, (req, res) => {
+app.post('/api/incoming/confirm_job', loginRequired, async (req, res) => {
   try {
     const { projectNumber, poSuffix, projectName } = req.body;
 
@@ -253,37 +275,51 @@ app.post('/api/incoming/confirm_job', loginRequired, (req, res) => {
       return res.status(400).json({ error: 'Invalid project information for filename generation' });
     }
 
-    // Create organized folder for project
-    const projectFolder = fileNaming.generateOrganizedFolderPath(projectNumber);
-    if (!fs.existsSync(projectFolder)) {
-      fs.mkdirSync(projectFolder, { recursive: true });
-    }
-
-    // Move/copy photos to organized folder with proper naming
-    const savedPhotoPaths = [];
-    req.session.slip.photos.forEach((photoPath, index) => {
-      const extension = path.extname(photoPath);
-      const newFilename = index === 0 ? filename : `${filename.replace('.jpg', '')}_page_${index + 1}${extension}`;
-      const newPath = path.join(projectFolder, newFilename);
-
-      try {
-        fs.copyFileSync(photoPath, newPath);
-        savedPhotoPaths.push(newPath);
-      } catch (err) {
-        console.error(`Failed to copy photo to ${newPath}:`, err);
-      }
-    });
-
-    // Create inventory entry
+    // Create inventory entry first to get entryId
     const entryId = inventory.addEntry({
       projectNumber: projectNumber,
       poSuffix: poSuffix,
       fullPO: `${projectNumber}-${poSuffix}`,
       projectName: projectName,
       scannedBy: req.session.user.email,
-      slipPhotoFilenames: savedPhotoPaths,
       status: 'received',
       confirmedAt: new Date().toISOString()
+    });
+
+    // Upload photos to file service
+    const uploadedPaths = [];
+    const directoryPath = fileNaming.generateOrganizedFolderPath(projectNumber);
+
+    for (let i = 0; i < req.session.slip.photos.length; i++) {
+      const photoPath = req.session.slip.photos[i];
+      const extension = path.extname(photoPath);
+      const uploadFilename = i === 0 ? filename : `${filename.replace('.jpg', '')}_page_${i + 1}${extension}`;
+
+      try {
+        const fileBuffer = fs.readFileSync(photoPath);
+        const uploadResult = await fileService.uploadFile(
+          entryId,
+          directoryPath,
+          uploadFilename,
+          fileBuffer
+        );
+
+        if (uploadResult) {
+          console.log(`File uploaded successfully: ${uploadFilename}`);
+          uploadedPaths.push(uploadResult.path || `${directoryPath}/${uploadFilename}`);
+        } else {
+          console.warn(`File upload returned null for ${uploadFilename}, continuing...`);
+          uploadedPaths.push(`${directoryPath}/${uploadFilename}`);
+        }
+      } catch (err) {
+        console.error(`Failed to upload photo ${uploadFilename}:`, err);
+        uploadedPaths.push(`${directoryPath}/${uploadFilename}`);
+      }
+    }
+
+    // Update inventory entry with uploaded file paths
+    inventory.updateEntry(entryId, {
+      slipPhotoFilenames: uploadedPaths
     });
 
     // Clear session slip after confirmation
@@ -294,8 +330,8 @@ app.post('/api/incoming/confirm_job', loginRequired, (req, res) => {
       entryId: entryId,
       fullPO: `${projectNumber}-${poSuffix}`,
       filename: filename,
-      savedPhotos: savedPhotoPaths,
-      message: 'Packing slip confirmed and saved'
+      savedPhotos: uploadedPaths,
+      message: 'Packing slip uploaded to file service'
     });
   } catch (error) {
     console.error('Confirm job error:', error);

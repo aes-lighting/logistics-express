@@ -203,7 +203,7 @@ app.post('/api/upload', loginRequired, upload.single('file'), (req, res) => {
 // ============================================
 
 
-app.post('/api/incoming/scan_page', loginRequired, upload.single('photo'), async (req, res) => {
+app.post('/api/incoming/scan_page', upload.single('photo'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No photo uploaded' });
@@ -273,7 +273,7 @@ app.get('/api/incoming/lookup-project/:projectNumber', loginRequired, async (req
   }
 });
 
-app.post('/api/incoming/confirm_job', loginRequired, async (req, res) => {
+app.post('/api/incoming/confirm_job', async (req, res) => {
   try {
     const { projectNumber, poSuffix, projectName } = req.body;
 
@@ -399,7 +399,7 @@ app.post('/api/incoming/pallet_photo', loginRequired, upload.single('photo'), (r
   }
 });
 
-app.post('/api/incoming/finalize', loginRequired, async (req, res) => {
+app.post('/api/incoming/finalize', async (req, res) => {
   try {
     const { entryId, location, comment } = req.body;
 

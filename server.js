@@ -17,6 +17,9 @@ const ticketRender = require('./lib/ticket-render');
 const maps = require('./lib/maps');
 const sms = require('./lib/sms');
 const inventoryReport = require('./lib/inventory-report');
+const fileService = require('./lib/file-service-client');
+const fileNaming = require('./lib/file-naming');
+const ocrPatterns = require('./lib/ocr-patterns');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -170,25 +173,37 @@ app.post('/api/incoming/scan_page', loginRequired, upload.single('photo'), async
 
     const photoPath = req.file.path;
 
-    // Extract text from image
-    const extractedText = await ocr.extractText(photoPath);
+    // Extract text and PO number from image
+    const ocrResult = await ocr.extractPOFromImage(photoPath);
 
     // Initialize session slip data if needed
     if (!req.session.slip) {
       req.session.slip = {
-        pages: [],
-        photos: []
+        photos: [],
+        poData: []
       };
     }
 
-    req.session.slip.pages.push(extractedText);
+    // If PO was extracted, look up project name from file service
+    let projectName = null;
+    if (ocrResult.success && ocrResult.projectNumber) {
+      projectName = await fileService.getProjectName(ocrResult.projectNumber);
+    }
+
+    // Store photo and PO data in session
     req.session.slip.photos.push(photoPath);
+    req.session.slip.poData.push({
+      pageNumber: req.session.slip.photos.length,
+      ...ocrResult,
+      projectName: projectName
+    });
 
     res.json({
       success: true,
-      pageNumber: req.session.slip.pages.length,
-      extractedText: extractedText,
-      message: 'Page scanned successfully'
+      pageNumber: req.session.slip.photos.length,
+      ocrResult: ocrResult,
+      projectName: projectName,
+      message: ocrResult.success ? 'PO extracted successfully' : 'Could not extract PO number - please verify manually'
     });
   } catch (error) {
     console.error('Scan error:', error);
@@ -198,36 +213,65 @@ app.post('/api/incoming/scan_page', loginRequired, upload.single('photo'), async
 
 app.post('/api/incoming/confirm_job', loginRequired, (req, res) => {
   try {
-    const { jobNumber } = req.body;
+    const { projectNumber, poSuffix, projectName } = req.body;
 
-    if (!req.session.slip) {
+    if (!req.session.slip || !req.session.slip.photos || req.session.slip.photos.length === 0) {
       return res.status(400).json({ error: 'No slip data in session' });
     }
 
-    req.session.slip.jobNumber = jobNumber;
-
-    // Create job folder if it doesn't exist
-    const jobFolder = path.join('organized', jobNumber.toString());
-    if (!fs.existsSync(jobFolder)) {
-      fs.mkdirSync(jobFolder, { recursive: true });
+    if (!projectNumber || !poSuffix || !projectName) {
+      return res.status(400).json({ error: 'Project number, PO suffix, and project name are required' });
     }
 
-    // Move photos to job folder
+    // Generate filename with proper naming convention
+    const filename = fileNaming.generatePackingSlipFilename(projectNumber, poSuffix, projectName);
+    if (!filename) {
+      return res.status(400).json({ error: 'Invalid project information for filename generation' });
+    }
+
+    // Create organized folder for project
+    const projectFolder = fileNaming.generateOrganizedFolderPath(projectNumber);
+    if (!fs.existsSync(projectFolder)) {
+      fs.mkdirSync(projectFolder, { recursive: true });
+    }
+
+    // Move/copy photos to organized folder with proper naming
+    const savedPhotoPaths = [];
     req.session.slip.photos.forEach((photoPath, index) => {
-      const newPath = path.join(jobFolder, `page_${index + 1}.jpg`);
-      fs.copyFileSync(photoPath, newPath);
+      const extension = path.extname(photoPath);
+      const newFilename = index === 0 ? filename : `${filename.replace('.jpg', '')}_page_${index + 1}${extension}`;
+      const newPath = path.join(projectFolder, newFilename);
+
+      try {
+        fs.copyFileSync(photoPath, newPath);
+        savedPhotoPaths.push(newPath);
+      } catch (err) {
+        console.error(`Failed to copy photo to ${newPath}:`, err);
+      }
     });
 
-    // Email PM about new incoming inventory
-    const pmEmail = req.session.user.email || 'pm@example.com';
-    emailer.sendIncomingNotification(pmEmail, jobNumber, req.session.slip.pages).catch(err => {
-      console.error('Email error:', err);
+    // Create inventory entry
+    const entryId = inventory.addEntry({
+      projectNumber: projectNumber,
+      poSuffix: poSuffix,
+      fullPO: `${projectNumber}-${poSuffix}`,
+      projectName: projectName,
+      scannedBy: req.session.user.email,
+      slipPhotoFilenames: savedPhotoPaths,
+      status: 'received',
+      confirmedAt: new Date().toISOString()
     });
+
+    // Clear session slip after confirmation
+    req.session.slip = null;
 
     res.json({
       success: true,
-      jobNumber: jobNumber,
-      message: 'Job confirmed and PM notified'
+      entryId: entryId,
+      fullPO: `${projectNumber}-${poSuffix}`,
+      filename: filename,
+      savedPhotos: savedPhotoPaths,
+      message: 'Packing slip confirmed and saved'
     });
   } catch (error) {
     console.error('Confirm job error:', error);
@@ -260,29 +304,45 @@ app.post('/api/incoming/pallet_photo', loginRequired, upload.single('photo'), (r
 
 app.post('/api/incoming/finalize', loginRequired, async (req, res) => {
   try {
-    const { location, pm } = req.body;
+    const { entryId, location, comment } = req.body;
 
-    if (!req.session.slip) {
-      return res.status(400).json({ error: 'No slip data' });
+    if (!entryId) {
+      return res.status(400).json({ error: 'Entry ID required' });
     }
 
-    // Create inventory entry
-    const entry = {
-      jobNumber: req.session.slip.jobNumber,
-      location: location,
-      assignedPm: pm,
-      status: 'received',
-      timestamp: new Date().toISOString(),
-      pages: req.session.slip.pages,
-      palletCount: req.session.slip.palletPhotos ? req.session.slip.palletPhotos.length : 0
-    };
+    // Get existing entry
+    const entry = inventory.getEntry(entryId);
+    if (!entry) {
+      return res.status(404).json({ error: 'Entry not found' });
+    }
 
-    const entryId = inventory.addEntry(entry);
+    // Copy pallet photos if provided
+    const palletPhotoPaths = [];
+    if (req.session.slip && req.session.slip.palletPhotos) {
+      const projectFolder = fileNaming.generateOrganizedFolderPath(entry.projectNumber);
 
-    // Generate QR PDF
-    const pdfFilename = `qr_${entryId}.pdf`;
-    // Note: QR PDF generation is stubbed - implement in production
-    inventory.setQrPdfFilename(entryId, pdfFilename);
+      req.session.slip.palletPhotos.forEach((photoPath, index) => {
+        const palletFilename = `pallet_${index + 1}.jpg`;
+        const newPath = path.join(projectFolder, palletFilename);
+
+        try {
+          fs.copyFileSync(photoPath, newPath);
+          palletPhotoPaths.push(newPath);
+        } catch (err) {
+          console.error(`Failed to copy pallet photo:`, err);
+        }
+      });
+    }
+
+    // Update entry with finalization details
+    const updatedEntry = inventory.updateEntry(entryId, {
+      location: location || 'Warehouse',
+      palletPhotos: palletPhotoPaths,
+      palletCount: palletPhotoPaths.length,
+      comment: comment,
+      finalizedAt: new Date().toISOString(),
+      status: 'completed'
+    });
 
     // Clear session slip
     req.session.slip = null;
@@ -290,7 +350,8 @@ app.post('/api/incoming/finalize', loginRequired, async (req, res) => {
     res.json({
       success: true,
       entryId: entryId,
-      message: 'Inventory entry created'
+      entry: updatedEntry,
+      message: 'Packing slip finalized and stored'
     });
   } catch (error) {
     console.error('Finalize error:', error);
@@ -298,29 +359,51 @@ app.post('/api/incoming/finalize', loginRequired, async (req, res) => {
   }
 });
 
-app.post('/api/incoming/flag', loginRequired, upload.single('photo'), async (req, res) => {
+app.post('/api/incoming/flag', loginRequired, async (req, res) => {
   try {
-    const { reason, jobNumber } = req.body;
+    const { reason } = req.body;
 
-    if (!req.session.slip) {
-      return res.status(400).json({ error: 'No slip data' });
+    if (!req.session.slip || !req.session.slip.photos || req.session.slip.photos.length === 0) {
+      return res.status(400).json({ error: 'No slip data to flag' });
     }
 
-    // Send flag email to PM
-    const pmEmail = req.session.user.email || 'pm@example.com';
-    const attachments = req.session.slip.photos.map(photoPath => ({
-      filename: path.basename(photoPath),
-      path: photoPath
-    }));
+    // Create flagged folder
+    const flaggedFolder = path.join('organized', 'flagged_packing_slips');
+    if (!fs.existsSync(flaggedFolder)) {
+      fs.mkdirSync(flaggedFolder, { recursive: true });
+    }
 
-    await emailer.sendFlagEmail(pmEmail, jobNumber, reason, attachments);
+    // Move photos to flagged folder
+    const flaggedPhotoPaths = [];
+    req.session.slip.photos.forEach((photoPath, index) => {
+      const filename = `flagged_${Date.now()}_${index + 1}.jpg`;
+      const newPath = path.join(flaggedFolder, filename);
+
+      try {
+        fs.copyFileSync(photoPath, newPath);
+        flaggedPhotoPaths.push(newPath);
+      } catch (err) {
+        console.error(`Failed to move photo to flagged folder:`, err);
+      }
+    });
+
+    // Create flagged entry for tracking
+    const entryId = inventory.addEntry({
+      status: 'flagged',
+      reason: reason || 'OCR could not extract PO number',
+      flaggedBy: req.session.user.email,
+      slipPhotoFilenames: flaggedPhotoPaths,
+      flaggedAt: new Date().toISOString()
+    });
 
     // Clear session
     req.session.slip = null;
 
     res.json({
       success: true,
-      message: 'Slip flagged and PM notified'
+      entryId: entryId,
+      message: 'Packing slip flagged for manual review - email notification will be sent when configured',
+      flaggedPhotos: flaggedPhotoPaths
     });
   } catch (error) {
     console.error('Flag error:', error);

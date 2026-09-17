@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AES Logistics - Incoming Inventory Management">
+  <meta name="theme-color" content="#2c3e50">
+  <title>AES Logistics - Incoming Inventory</title>
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #f5f7fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      background: white;
+      min-height: 100vh;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #2c3e50;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    main {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .step {
+      display: none;
+    }
+
+    .step.active {
+      display: block;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #2c3e50;
+      font-size: 0.95rem;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 1rem;
+      font-family: inherit;
+    }
+
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #3498db;
+      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 30px;
+    }
+
+    button {
+      flex: 1;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: #3498db;
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #2980b9;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+    }
+
+    .btn-secondary {
+      background: #95a5a6;
+      color: white;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #7f8c8d;
+    }
+
+    .btn-success {
+      background: #27ae60;
+      color: white;
+    }
+
+    .btn-success:hover:not(:disabled) {
+      background: #229954;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(39, 174, 96, 0.3);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .file-input-wrapper {
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+      width: 100%;
+    }
+
+    .file-input-wrapper input[type="file"] {
+      position: absolute;
+      left: -9999px;
+    }
+
+    .file-label {
+      display: block;
+      padding: 12px;
+      background: #ecf0f1;
+      border: 2px dashed #3498db;
+      border-radius: 4px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .file-label:hover {
+      background: #d5dbdb;
+      border-color: #2980b9;
+    }
+
+    .file-label.has-file {
+      background: #d5f4e6;
+      border-color: #27ae60;
+      color: #27ae60;
+    }
+
+    .preview-image {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+      margin: 15px 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .ocr-result {
+      background: #ecf0f1;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 15px 0;
+      border-left: 4px solid #3498db;
+    }
+
+    .ocr-result.success {
+      border-left-color: #27ae60;
+      background: #d5f4e6;
+    }
+
+    .ocr-result.warning {
+      border-left-color: #f39c12;
+      background: #fdeaa8;
+    }
+
+    .ocr-result h3 {
+      margin-bottom: 10px;
+      color: #2c3e50;
+    }
+
+    .ocr-result p {
+      margin: 5px 0;
+      font-size: 0.95rem;
+    }
+
+    .info-box {
+      background: #e8f4f8;
+      border-left: 4px solid #3498db;
+      padding: 12px 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 0.95rem;
+    }
+
+    .success-box {
+      background: #d5f4e6;
+      border-left: 4px solid #27ae60;
+      padding: 20px;
+      border-radius: 4px;
+      text-align: center;
+      margin: 30px 0;
+    }
+
+    .success-box h2 {
+      color: #27ae60;
+      margin-bottom: 10px;
+    }
+
+    .success-box p {
+      color: #229954;
+      margin: 8px 0;
+    }
+
+    .step-indicator {
+      background: #ecf0f1;
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 0.9rem;
+      text-align: center;
+      color: #7f8c8d;
+    }
+
+    .error-message {
+      background: #fadbd8;
+      border-left: 4px solid #e74c3c;
+      color: #c0392b;
+      padding: 12px 15px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+      display: none;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #ecf0f1;
+      border-radius: 50%;
+      border-top-color: #3498db;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    footer {
+      background: #ecf0f1;
+      padding: 15px 20px;
+      text-align: center;
+      font-size: 0.85rem;
+      color: #7f8c8d;
+      border-top: 1px solid #bdc3c7;
+    }
+
+    .user-info {
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.8);
+      margin-top: 10px;
+    }
+
+    .btn-logout {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      float: right;
+      margin-top: 10px;
+    }
+
+    .btn-logout:hover {
+      background: rgba(255,255,255,0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>AES Logistics</h1>
+      <p>Incoming Inventory</p>
+      <div class="user-info" id="userInfo"></div>
+      <button class="btn-logout" id="logoutBtn" style="display:none;">Logout</button>
+    </header>
+
+    <main>
+      <!-- Login Step -->
+      <div class="step active" id="loginStep">
+        <h2>Sign In</h2>
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required>
+          </div>
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required>
+          </div>
+          <div class="error-message" id="loginError"></div>
+          <button type="submit" class="btn-primary" style="width:100%;">Sign In</button>
+        </form>
+      </div>
+
+      <!-- Step 1: Capture Photo -->
+      <div class="step" id="step1">
+        <div class="step-indicator">Step 1 of 3: Capture Photo</div>
+        <h2>Scan Packing Slip</h2>
+        <p style="margin-bottom: 15px; color: #7f8c8d;">Take a photo of the packing slip or upload an existing image.</p>
+
+        <div class="file-input-wrapper">
+          <input type="file" id="photoInput" accept="image/*" capture="environment">
+          <label for="photoInput" class="file-label" id="fileLabel">
+            📷 Take Photo or Tap to Upload
+          </label>
+        </div>
+
+        <img id="photoPreview" class="preview-image" style="display:none;">
+
+        <div class="button-group">
+          <button type="button" class="btn-secondary" onclick="logout()">Cancel</button>
+          <button type="button" class="btn-primary" id="scanBtn" disabled>Scan →</button>
+        </div>
+      </div>
+
+      <!-- Step 2: Review OCR Result -->
+      <div class="step" id="step2">
+        <div class="step-indicator">Step 2 of 3: Review Results</div>
+        <h2>OCR Results</h2>
+
+        <div id="ocrResultBox" class="ocr-result warning">
+          <h3>Analysis</h3>
+          <p id="ocrMessage">Processing image...</p>
+          <p id="ocrDetails"></p>
+        </div>
+
+        <div class="form-group">
+          <label for="projectNumber">Project Number *</label>
+          <input type="text" id="projectNumber" maxlength="5" placeholder="e.g., 12345" required>
+        </div>
+
+        <div class="form-group">
+          <label for="poSuffix">PO Suffix *</label>
+          <input type="text" id="poSuffix" maxlength="3" placeholder="e.g., 01" required>
+        </div>
+
+        <div class="form-group">
+          <label for="projectName">Project Name *</label>
+          <input type="text" id="projectName" placeholder="e.g., LED Panels" required>
+        </div>
+
+        <div class="button-group">
+          <button type="button" class="btn-secondary" onclick="goToStep(1)">← Back</button>
+          <button type="button" class="btn-primary" id="confirmBtn">Confirm →</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Confirm Job -->
+      <div class="step" id="step3">
+        <div class="step-indicator">Step 3 of 3: Confirm</div>
+        <h2>Confirm Job Details</h2>
+
+        <div class="info-box">
+          <strong>Full PO:</strong> <span id="displayFullPO"></span><br>
+          <strong>Project:</strong> <span id="displayProjectName"></span><br>
+          <strong>File Name:</strong> <span id="displayFileName" style="word-break:break-all;"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="comment">Notes (Optional)</label>
+          <textarea id="comment" placeholder="Any special instructions or notes..."></textarea>
+        </div>
+
+        <div class="button-group">
+          <button type="button" class="btn-secondary" onclick="goToStep(2)">← Back</button>
+          <button type="button" class="btn-success" id="finalizeBtn">Complete ✓</button>
+        </div>
+      </div>
+
+      <!-- Success Step -->
+      <div class="step" id="successStep">
+        <div class="success-box">
+          <h2>✓ Success!</h2>
+          <p>Packing slip saved successfully</p>
+          <p style="font-size:0.9rem;"><strong>Entry ID:</strong> <span id="entryId"></span></p>
+          <p style="font-size:0.9rem;"><strong>Full PO:</strong> <span id="successFullPO"></span></p>
+        </div>
+
+        <div class="button-group">
+          <button type="button" class="btn-primary" onclick="resetWorkflow()">Scan Next →</button>
+          <button type="button" class="btn-secondary" onclick="logout()">Logout</button>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      AES Logistics Express v1.0
+    </footer>
+  </div>
+
+  <script>
+    // State management
+    const state = {
+      user: null,
+      currentStep: 1,
+      photoPath: null,
+      ocrResult: null,
+      projectNumber: null,
+      poSuffix: null,
+      projectName: null,
+      entryId: null
+    };
+
+    const API_BASE = '/api';
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      checkAuth();
+      setupEventListeners();
+    });
+
+    function setupEventListeners() {
+      document.getElementById('loginForm').addEventListener('submit', handleLogin);
+      document.getElementById('photoInput').addEventListener('change', handlePhotoSelect);
+      document.getElementById('scanBtn').addEventListener('click', scanPhoto);
+      document.getElementById('confirmBtn').addEventListener('click', confirmJob);
+      document.getElementById('finalizeBtn').addEventListener('click', finalizeJob);
+      document.getElementById('logoutBtn').addEventListener('click', logout);
+    }
+
+    async function checkAuth() {
+      try {
+        const response = await fetch(`${API_BASE}/auth/me`);
+        if (response.ok) {
+          const data = await response.json();
+          state.user = data.user;
+          showAuthenticatedUI();
+          goToStep(1);
+        } else {
+          showLoginStep();
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        showLoginStep();
+      }
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const errorBox = document.getElementById('loginError');
+
+      try {
+        errorBox.classList.remove('show');
+        const response = await fetch(`${API_BASE}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          state.user = data.user;
+          showAuthenticatedUI();
+          goToStep(1);
+        } else {
+          errorBox.textContent = 'Invalid email or password';
+          errorBox.classList.add('show');
+        }
+      } catch (error) {
+        errorBox.textContent = 'Login failed: ' + error.message;
+        errorBox.classList.add('show');
+      }
+    }
+
+    function showAuthenticatedUI() {
+      document.getElementById('loginStep').style.display = 'none';
+      document.getElementById('userInfo').textContent = `Logged in as: ${state.user.name}`;
+      document.getElementById('logoutBtn').style.display = 'inline-block';
+    }
+
+    function showLoginStep() {
+      document.getElementById('loginStep').classList.add('active');
+      document.getElementById('step1').style.display = 'none';
+    }
+
+    function handlePhotoSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const preview = document.getElementById('photoPreview');
+        preview.src = event.target.result;
+        preview.style.display = 'block';
+
+        const label = document.getElementById('fileLabel');
+        label.textContent = '✓ Photo selected';
+        label.classList.add('has-file');
+
+        document.getElementById('scanBtn').disabled = false;
+        state.photoPath = file;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function scanPhoto() {
+      if (!state.photoPath) return;
+
+      const scanBtn = document.getElementById('scanBtn');
+      scanBtn.disabled = true;
+      scanBtn.innerHTML = '<span class="loading"></span> Scanning...';
+
+      try {
+        const formData = new FormData();
+        formData.append('photo', state.photoPath);
+
+        const response = await fetch(`${API_BASE}/incoming/scan_page`, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          state.ocrResult = data.ocrResult;
+
+          // Display OCR results
+          const resultBox = document.getElementById('ocrResultBox');
+          const message = document.getElementById('ocrMessage');
+          const details = document.getElementById('ocrDetails');
+
+          if (data.ocrResult.success) {
+            resultBox.classList.remove('warning');
+            resultBox.classList.add('success');
+            message.textContent = '✓ PO Number Extracted';
+
+            document.getElementById('projectNumber').value = data.ocrResult.projectNumber;
+            document.getElementById('poSuffix').value = data.ocrResult.poSuffix;
+
+            details.innerHTML = `
+              <strong>PO Number:</strong> ${data.ocrResult.fullPO}<br>
+              <small>Please verify and edit if needed</small>
+            `;
+          } else {
+            resultBox.classList.add('warning');
+            resultBox.classList.remove('success');
+            message.textContent = '⚠ Could not extract PO number';
+            details.innerHTML = '<small>Please enter project details manually</small>';
+          }
+
+          // Pre-fill project name if available
+          if (data.projectName) {
+            document.getElementById('projectName').value = data.projectName;
+          }
+
+          goToStep(2);
+        } else {
+          alert('Scan failed: ' + (await response.text()));
+        }
+      } catch (error) {
+        alert('Scan error: ' + error.message);
+      } finally {
+        scanBtn.disabled = false;
+        scanBtn.innerHTML = 'Scan →';
+      }
+    }
+
+    function confirmJob() {
+      const projectNumber = document.getElementById('projectNumber').value.trim();
+      const poSuffix = document.getElementById('poSuffix').value.trim();
+      const projectName = document.getElementById('projectName').value.trim();
+
+      if (!projectNumber || !poSuffix || !projectName) {
+        alert('Please fill in all required fields');
+        return;
+      }
+
+      state.projectNumber = projectNumber;
+      state.poSuffix = poSuffix;
+      state.projectName = projectName;
+
+      // Display confirmation details
+      document.getElementById('displayFullPO').textContent = `${projectNumber}-${poSuffix}`;
+      document.getElementById('displayProjectName').textContent = projectName;
+      document.getElementById('displayFileName').textContent = `${projectNumber}-${poSuffix} ${projectName} - ${getTodayDate()}.jpg`;
+
+      goToStep(3);
+    }
+
+    async function finalizeJob() {
+      const finalizeBtn = document.getElementById('finalizeBtn');
+      finalizeBtn.disabled = true;
+      finalizeBtn.innerHTML = '<span class="loading"></span> Saving...';
+
+      try {
+        const response = await fetch(`${API_BASE}/incoming/confirm_job`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectNumber: state.projectNumber,
+            poSuffix: state.poSuffix,
+            projectName: state.projectName,
+            comment: document.getElementById('comment').value
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          state.entryId = data.entryId;
+
+          // Show success
+          document.getElementById('entryId').textContent = data.entryId.substring(0, 8) + '...';
+          document.getElementById('successFullPO').textContent = data.fullPO;
+
+          goToStep(4);
+        } else {
+          alert('Save failed: ' + (await response.text()));
+        }
+      } catch (error) {
+        alert('Error: ' + error.message);
+      } finally {
+        finalizeBtn.disabled = false;
+        finalizeBtn.innerHTML = 'Complete ✓';
+      }
+    }
+
+    function goToStep(step) {
+      // Hide all steps
+      document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+
+      // Show requested step
+      const steps = ['loginStep', 'step1', 'step2', 'step3', 'successStep'];
+      if (steps[step - 1]) {
+        document.getElementById(steps[step - 1]).classList.add('active');
+      }
+
+      state.currentStep = step;
+      window.scrollTo(0, 0);
+    }
+
+    function resetWorkflow() {
+      // Reset form
+      document.getElementById('photoInput').value = '';
+      document.getElementById('photoPreview').style.display = 'none';
+      document.getElementById('fileLabel').textContent = '📷 Take Photo or Tap to Upload';
+      document.getElementById('fileLabel').classList.remove('has-file');
+      document.getElementById('scanBtn').disabled = true;
+
+      document.getElementById('projectNumber').value = '';
+      document.getElementById('poSuffix').value = '';
+      document.getElementById('projectName').value = '';
+      document.getElementById('comment').value = '';
+
+      // Reset state
+      state.photoPath = null;
+      state.ocrResult = null;
+      state.projectNumber = null;
+      state.poSuffix = null;
+      state.projectName = null;
+      state.entryId = null;
+
+      goToStep(1);
+    }
+
+    async function logout() {
+      try {
+        await fetch(`${API_BASE}/auth/logout`, { method: 'POST' });
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
+
+      state.user = null;
+      document.getElementById('userInfo').textContent = '';
+      document.getElementById('logoutBtn').style.display = 'none';
+      document.getElementById('loginStep').classList.add('active');
+      document.querySelectorAll('.step').forEach((el, i) => {
+        if (i > 0) el.classList.remove('active');
+      });
+      document.getElementById('email').value = '';
+      document.getElementById('password').value = '';
+    }
+
+    function getTodayDate() {
+      const today = new Date();
+      const month = today.getMonth() + 1;
+      const day = today.getDate();
+      const year = today.getFullYear();
+      return `${month}-${day}-${year}`;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+{
+  "name": "AES Logistics Incoming Inventory",
+  "short_name": "AES Logistics",
+  "description": "Mobile-first app for scanning and managing incoming inventory",
+  "start_url": "/incoming.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2c3e50",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%232c3e50' width='192' height='192'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='80' fill='white' font-weight='bold'>AES</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%232c3e50' width='512' height='512'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='250' fill='white' font-weight='bold'>AES</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "screenshots": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 540 720'><rect fill='%23f5f7fa' width='540' height='720'/><rect fill='%232c3e50' width='540' height='120'/><text x='270' y='70' text-anchor='middle' font-size='40' fill='white' font-weight='bold'>AES Logistics</text></svg>",
+      "sizes": "540x720",
+      "type": "image/svg+xml",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Scan Packing Slip",
+      "short_name": "Scan",
+      "description": "Start scanning a new packing slip",
+      "url": "/incoming.html",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect fill='%232c3e50' width='96' height='96'/><text x='48' y='48' text-anchor='middle' dominant-baseline='middle' font-size='50' fill='white'>📷</text></svg>",
+          "sizes": "96x96",
+          "type": "image/svg+xml"
+        }
+      ]
+    }
+  ]
+}

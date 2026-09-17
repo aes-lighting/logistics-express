@@ -3,10 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="AES Logistics - Incoming Inventory Management">
-  <meta name="theme-color" content="#2c3e50">
   <title>AES Logistics - Incoming Inventory</title>
-  <link rel="manifest" href="/manifest.json">
   <style>
     * {
       margin: 0;
@@ -18,17 +15,15 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       background: #f5f7fa;
       color: #333;
-      line-height: 1.6;
     }
 
     .container {
       max-width: 500px;
-      margin: 0 auto;
+      margin: 20px auto;
       background: white;
-      min-height: 100vh;
-      box-shadow: 0 0 20px rgba(0,0,0,0.1);
-      display: flex;
-      flex-direction: column;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      overflow: hidden;
     }
 
     header {
@@ -36,7 +31,6 @@
       color: white;
       padding: 20px;
       text-align: center;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
     header h1 {
@@ -49,30 +43,8 @@
       opacity: 0.9;
     }
 
-    main {
-      flex: 1;
-      padding: 20px;
-      overflow-y: auto;
-    }
-
-    .step {
-      display: none;
-    }
-
-    .step.active {
-      display: block;
-      animation: slideIn 0.3s ease;
-    }
-
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    .content {
+      padding: 30px;
     }
 
     .form-group {
@@ -81,25 +53,28 @@
 
     label {
       display: block;
-      font-weight: 600;
+      font-weight: 500;
       margin-bottom: 8px;
-      color: #2c3e50;
-      font-size: 0.95rem;
+      font-size: 14px;
     }
 
-    input, textarea {
+    input[type="text"],
+    input[type="file"],
+    textarea {
       width: 100%;
       padding: 12px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 1rem;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 16px;
       font-family: inherit;
+      transition: border-color 0.3s;
     }
 
-    input:focus, textarea:focus {
+    input[type="text"]:focus,
+    input[type="file"]:focus,
+    textarea:focus {
       outline: none;
-      border-color: #3498db;
-      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+      border-color: #2c3e50;
     }
 
     textarea {
@@ -107,691 +82,357 @@
       min-height: 80px;
     }
 
-    .button-group {
-      display: flex;
-      gap: 10px;
-      margin-top: 30px;
-    }
-
-    button {
-      flex: 1;
-      padding: 14px 20px;
-      border: none;
-      border-radius: 4px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .btn-primary {
-      background: #3498db;
-      color: white;
-    }
-
-    .btn-primary:hover:not(:disabled) {
-      background: #2980b9;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
-    }
-
-    .btn-secondary {
-      background: #95a5a6;
-      color: white;
-    }
-
-    .btn-secondary:hover:not(:disabled) {
-      background: #7f8c8d;
-    }
-
-    .btn-success {
-      background: #27ae60;
-      color: white;
-    }
-
-    .btn-success:hover:not(:disabled) {
-      background: #229954;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(39, 174, 96, 0.3);
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .file-input-wrapper {
-      position: relative;
-      overflow: hidden;
-      display: inline-block;
-      width: 100%;
-    }
-
-    .file-input-wrapper input[type="file"] {
-      position: absolute;
-      left: -9999px;
-    }
-
-    .file-label {
-      display: block;
-      padding: 12px;
-      background: #ecf0f1;
-      border: 2px dashed #3498db;
-      border-radius: 4px;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .file-label:hover {
-      background: #d5dbdb;
-      border-color: #2980b9;
-    }
-
-    .file-label.has-file {
-      background: #d5f4e6;
-      border-color: #27ae60;
-      color: #27ae60;
-    }
-
-    .preview-image {
-      max-width: 100%;
-      height: auto;
-      border-radius: 4px;
-      margin: 15px 0;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-
-    .ocr-result {
-      background: #ecf0f1;
-      padding: 15px;
-      border-radius: 4px;
-      margin: 15px 0;
-      border-left: 4px solid #3498db;
-    }
-
-    .ocr-result.success {
-      border-left-color: #27ae60;
-      background: #d5f4e6;
-    }
-
-    .ocr-result.warning {
-      border-left-color: #f39c12;
-      background: #fdeaa8;
-    }
-
-    .ocr-result h3 {
-      margin-bottom: 10px;
-      color: #2c3e50;
-    }
-
-    .ocr-result p {
-      margin: 5px 0;
-      font-size: 0.95rem;
+    .file-name {
+      font-size: 12px;
+      color: #666;
+      margin-top: 6px;
+      font-style: italic;
     }
 
     .info-box {
-      background: #e8f4f8;
-      border-left: 4px solid #3498db;
-      padding: 12px 15px;
-      border-radius: 4px;
-      margin-bottom: 20px;
-      font-size: 0.95rem;
-    }
-
-    .success-box {
-      background: #d5f4e6;
-      border-left: 4px solid #27ae60;
-      padding: 20px;
-      border-radius: 4px;
-      text-align: center;
-      margin: 30px 0;
-    }
-
-    .success-box h2 {
-      color: #27ae60;
-      margin-bottom: 10px;
-    }
-
-    .success-box p {
-      color: #229954;
-      margin: 8px 0;
-    }
-
-    .step-indicator {
-      background: #ecf0f1;
+      background: #f9f9f9;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
       padding: 12px;
-      border-radius: 4px;
-      margin-bottom: 20px;
-      font-size: 0.9rem;
-      text-align: center;
-      color: #7f8c8d;
+      margin: 15px 0;
+      font-size: 14px;
+      line-height: 1.6;
     }
 
-    .error-message {
-      background: #fadbd8;
-      border-left: 4px solid #e74c3c;
-      color: #c0392b;
-      padding: 12px 15px;
-      border-radius: 4px;
-      margin-bottom: 15px;
-      display: none;
+    .info-box.success {
+      background: #f0f7f4;
+      border-color: #10b981;
+      color: #065f46;
     }
 
-    .error-message.show {
-      display: block;
+    .info-box.error {
+      background: #fef2f2;
+      border-color: #ef4444;
+      color: #7f1d1d;
     }
 
-    .loading {
+    .info-box.loading {
+      background: #eff6ff;
+      border-color: #3b82f6;
+      color: #1e40af;
+    }
+
+    .info-item {
+      margin: 8px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+    }
+
+    .info-label {
+      font-weight: 600;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #2c3e50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 10px;
+    }
+
+    button:hover:not(:disabled) {
+      background: #1a252f;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .button-group button {
+      flex: 1;
+      margin-top: 0;
+    }
+
+    .spinner {
       display: inline-block;
-      width: 20px;
-      height: 20px;
-      border: 3px solid #ecf0f1;
+      width: 14px;
+      height: 14px;
+      border: 2px solid #f0f0f0;
+      border-top: 2px solid #2c3e50;
       border-radius: 50%;
-      border-top-color: #3498db;
-      animation: spin 0.6s linear infinite;
+      animation: spin 0.8s linear infinite;
+      margin-right: 6px;
     }
 
     @keyframes spin {
-      to { transform: rotate(360deg); }
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .step {
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .step:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .step-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+      text-transform: uppercase;
+      margin-bottom: 15px;
     }
 
     footer {
-      background: #ecf0f1;
-      padding: 15px 20px;
+      padding: 15px 30px;
+      background: #f9f9f9;
+      font-size: 12px;
+      color: #666;
       text-align: center;
-      font-size: 0.85rem;
-      color: #7f8c8d;
-      border-top: 1px solid #bdc3c7;
-    }
-
-    .user-info {
-      font-size: 0.9rem;
-      color: rgba(255,255,255,0.8);
-      margin-top: 10px;
-    }
-
-    .btn-logout {
-      background: rgba(255,255,255,0.2);
-      color: white;
-      padding: 8px 12px;
-      font-size: 0.85rem;
-      float: right;
-      margin-top: 10px;
-    }
-
-    .btn-logout:hover {
-      background: rgba(255,255,255,0.3);
+      border-top: 1px solid #e0e0e0;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>AES Logistics</h1>
+      <h1>📦 AES Logistics</h1>
       <p>Incoming Inventory</p>
-      <div class="user-info" id="userInfo"></div>
-      <button class="btn-logout" id="logoutBtn" style="display:none;">Logout</button>
     </header>
 
-    <main>
-      <!-- Login Step -->
-      <div class="step active" id="loginStep">
-        <h2>Sign In</h2>
-        <form id="loginForm">
-          <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" name="email" required>
-          </div>
-          <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" required>
-          </div>
-          <div class="error-message" id="loginError"></div>
-          <button type="submit" class="btn-primary" style="width:100%;">Sign In</button>
-        </form>
+    <div class="content">
+      <!-- Step 1: Upload Photo -->
+      <div class="step">
+        <div class="step-title">Step 1: Capture Photo</div>
+        <div class="form-group">
+          <label for="photoInput">Select Packing Slip Image</label>
+          <input type="file" id="photoInput" accept="image/*" required>
+          <div class="file-name" id="fileName"></div>
+        </div>
+        <button type="button" id="extractBtn">Extract PO Number</button>
+        <div class="info-box" id="extractResult" style="display:none;"></div>
       </div>
 
-      <!-- Step 1: Capture Photo -->
-      <div class="step" id="step1">
-        <div class="step-indicator">Step 1 of 3: Capture Photo</div>
-        <h2>Scan Packing Slip</h2>
-        <p style="margin-bottom: 15px; color: #7f8c8d;">Take a photo of the packing slip or upload an existing image.</p>
+      <!-- Step 2: Verify PO and Get Project Name -->
+      <div class="step">
+        <div class="step-title">Step 2: Verify Details</div>
 
-        <div class="file-input-wrapper">
-          <input type="file" id="photoInput" accept="image/*" capture="environment">
-          <label for="photoInput" class="file-label" id="fileLabel">
-            📷 Take Photo or Tap to Upload
-          </label>
-        </div>
-
-        <img id="photoPreview" class="preview-image" style="display:none;">
-
-        <div class="button-group">
-          <button type="button" class="btn-secondary" onclick="logout()">Cancel</button>
-          <button type="button" class="btn-primary" id="scanBtn" disabled>Scan →</button>
-        </div>
-      </div>
-
-      <!-- Step 2: Review OCR Result -->
-      <div class="step" id="step2">
-        <div class="step-indicator">Step 2 of 3: Review Results</div>
-        <h2>OCR Results</h2>
-
-        <div id="ocrResultBox" class="ocr-result warning">
-          <h3>Analysis</h3>
-          <p id="ocrMessage">Processing image...</p>
-          <p id="ocrDetails"></p>
+        <div class="form-group">
+          <label for="projectNumber">Project Number</label>
+          <input type="text" id="projectNumber" placeholder="e.g., 25066" readonly>
         </div>
 
         <div class="form-group">
-          <label for="projectNumber">Project Number *</label>
-          <input type="text" id="projectNumber" maxlength="5" placeholder="e.g., 12345" required onblur="lookupProjectNameAuto()">
+          <label for="poSuffix">PO Suffix</label>
+          <input type="text" id="poSuffix" placeholder="e.g., 99" readonly>
         </div>
 
         <div class="form-group">
-          <label for="poSuffix">PO Suffix *</label>
-          <input type="text" id="poSuffix" maxlength="3" placeholder="e.g., 01" required>
+          <label for="projectName">Project Name</label>
+          <input type="text" id="projectName" placeholder="Looking up...">
         </div>
 
+        <button type="button" id="lookupBtn" disabled>Lookup Project Name</button>
+        <div class="info-box" id="lookupResult" style="display:none;"></div>
+      </div>
+
+      <!-- Step 3: Upload -->
+      <div class="step">
+        <div class="step-title">Step 3: Notes (Optional)</div>
         <div class="form-group">
-          <label for="projectName">Project Name *</label>
-          <input type="text" id="projectName" placeholder="e.g., LED Panels" required>
-          <small style="color:#7f8c8d; margin-top:5px; display:block;">Looks up automatically based on project number</small>
+          <label for="notes">Any Special Instructions</label>
+          <textarea id="notes" placeholder="e.g., Fragile items, handle with care"></textarea>
         </div>
 
-        <div class="button-group">
-          <button type="button" class="btn-secondary" onclick="goToStep(1)">← Back</button>
-          <button type="button" class="btn-primary" id="confirmBtn">Confirm →</button>
-        </div>
+        <button type="button" id="uploadBtn" disabled>Upload Packing Slip</button>
+        <div class="info-box" id="uploadResult" style="display:none;"></div>
       </div>
 
-      <!-- Step 3: Confirm Job -->
-      <div class="step" id="step3">
-        <div class="step-indicator">Step 3 of 3: Confirm</div>
-        <h2>Confirm Job Details</h2>
-
-        <div class="info-box">
-          <strong>Full PO:</strong> <span id="displayFullPO"></span><br>
-          <strong>Project:</strong> <span id="displayProjectName"></span><br>
-          <strong>File Name:</strong> <span id="displayFileName" style="word-break:break-all;"></span>
-        </div>
-
-        <div class="form-group">
-          <label for="comment">Notes (Optional)</label>
-          <textarea id="comment" placeholder="Any special instructions or notes..."></textarea>
-        </div>
-
-        <div class="button-group">
-          <button type="button" class="btn-secondary" onclick="goToStep(2)">← Back</button>
-          <button type="button" class="btn-success" id="finalizeBtn">Complete ✓</button>
-        </div>
+      <div class="button-group">
+        <button type="button" id="resetBtn">Reset</button>
       </div>
-
-      <!-- Success Step -->
-      <div class="step" id="successStep">
-        <div class="success-box">
-          <h2>✓ Success!</h2>
-          <p>Packing slip saved successfully</p>
-          <p style="font-size:0.9rem;"><strong>Entry ID:</strong> <span id="entryId"></span></p>
-          <p style="font-size:0.9rem;"><strong>Full PO:</strong> <span id="successFullPO"></span></p>
-        </div>
-
-        <div class="button-group">
-          <button type="button" class="btn-primary" onclick="resetWorkflow()">Scan Next →</button>
-          <button type="button" class="btn-secondary" onclick="logout()">Logout</button>
-        </div>
-      </div>
-    </main>
+    </div>
 
     <footer>
-      AES Logistics Express v1.2
+      AES Logistics Express v2.0
     </footer>
   </div>
 
   <script>
-    // State management
-    const state = {
-      user: null,
-      currentStep: 1,
-      photoPath: null,
-      ocrResult: null,
-      projectNumber: null,
-      poSuffix: null,
-      projectName: null,
-      entryId: null
-    };
+    const photoInput = document.getElementById('photoInput');
+    const fileName = document.getElementById('fileName');
+    const extractBtn = document.getElementById('extractBtn');
+    const projectNumber = document.getElementById('projectNumber');
+    const poSuffix = document.getElementById('poSuffix');
+    const projectName = document.getElementById('projectName');
+    const lookupBtn = document.getElementById('lookupBtn');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const resetBtn = document.getElementById('resetBtn');
 
-    const API_BASE = '/api';
+    let photoFile = null;
 
-    // Initialize
-    document.addEventListener('DOMContentLoaded', () => {
-      checkAuth();
-      setupEventListeners();
+    const API_BASE = '';
+
+    // File selection
+    photoInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        photoFile = e.target.files[0];
+        fileName.textContent = `Selected: ${photoFile.name}`;
+        extractBtn.disabled = false;
+      }
     });
 
-    function setupEventListeners() {
-      document.getElementById('loginForm').addEventListener('submit', handleLogin);
-      document.getElementById('photoInput').addEventListener('change', handlePhotoSelect);
-      document.getElementById('scanBtn').addEventListener('click', scanPhoto);
-      document.getElementById('confirmBtn').addEventListener('click', confirmJob);
-      document.getElementById('finalizeBtn').addEventListener('click', finalizeJob);
-      document.getElementById('logoutBtn').addEventListener('click', logout);
-    }
+    // Extract PO from image
+    extractBtn.addEventListener('click', async () => {
+      if (!photoFile) return;
 
-    async function checkAuth() {
-      try {
-        const response = await fetch(`${API_BASE}/auth/me`, {
-          credentials: 'include'
-        });
-        if (response.ok) {
-          const data = await response.json();
-          state.user = data.user;
-          showAuthenticatedUI();
-          goToStep(1);
-        } else {
-          showLoginStep();
-        }
-      } catch (error) {
-        console.error('Auth check failed:', error);
-        showLoginStep();
-      }
-    }
+      const formData = new FormData();
+      formData.append('photo', photoFile);
 
-    async function handleLogin(e) {
-      e.preventDefault();
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      const errorBox = document.getElementById('loginError');
+      extractBtn.disabled = true;
+      extractBtn.innerHTML = '<span class="spinner"></span>Extracting...';
+      const result = document.getElementById('extractResult');
+      result.style.display = 'none';
 
       try {
-        errorBox.classList.remove('show');
-        const response = await fetch(`${API_BASE}/auth/login`, {
+        const response = await fetch(`${API_BASE}/api/extract-po`, {
           method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          state.user = data.user;
-          showAuthenticatedUI();
-          goToStep(1);
-        } else {
-          errorBox.textContent = 'Invalid email or password';
-          errorBox.classList.add('show');
-        }
-      } catch (error) {
-        errorBox.textContent = 'Login failed: ' + error.message;
-        errorBox.classList.add('show');
-      }
-    }
-
-    function showAuthenticatedUI() {
-      document.getElementById('loginStep').classList.remove('active');
-      document.getElementById('userInfo').textContent = `Logged in as: ${state.user.name}`;
-      document.getElementById('logoutBtn').style.display = 'inline-block';
-    }
-
-    function showLoginStep() {
-      document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
-      document.getElementById('loginStep').classList.add('active');
-    }
-
-    function handlePhotoSelect(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const preview = document.getElementById('photoPreview');
-        preview.src = event.target.result;
-        preview.style.display = 'block';
-
-        const label = document.getElementById('fileLabel');
-        label.textContent = '✓ Photo selected';
-        label.classList.add('has-file');
-
-        document.getElementById('scanBtn').disabled = false;
-        state.photoPath = file;
-      };
-      reader.readAsDataURL(file);
-    }
-
-    async function scanPhoto() {
-      if (!state.photoPath) return;
-
-      const scanBtn = document.getElementById('scanBtn');
-      scanBtn.disabled = true;
-      scanBtn.innerHTML = '<span class="loading"></span> Scanning...';
-
-      try {
-        const formData = new FormData();
-        formData.append('photo', state.photoPath);
-
-        const response = await fetch(`${API_BASE}/incoming/scan_page`, {
-          method: 'POST',
-          credentials: 'include',
           body: formData
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          state.ocrResult = data.ocrResult;
+        const data = await response.json();
 
-          // Track the photo path for later upload
-          if (!state.photos) {
-            state.photos = [];
-          }
-          state.photos.push(data.photoPath);
+        if (response.ok && data.success) {
+          projectNumber.value = data.projectNumber || '';
+          poSuffix.value = data.poSuffix || '';
+          projectName.value = '';
+          lookupBtn.disabled = !projectNumber.value;
 
-          // Display OCR results
-          const resultBox = document.getElementById('ocrResultBox');
-          const message = document.getElementById('ocrMessage');
-          const details = document.getElementById('ocrDetails');
-
-          if (data.ocrResult.success) {
-            resultBox.classList.remove('warning');
-            resultBox.classList.add('success');
-            message.textContent = '✓ PO Number Extracted';
-
-            document.getElementById('projectNumber').value = data.ocrResult.projectNumber;
-            document.getElementById('poSuffix').value = data.ocrResult.poSuffix;
-
-            details.innerHTML = `
-              <strong>PO Number:</strong> ${data.ocrResult.fullPO}<br>
-              <small>Please verify and edit if needed</small>
-            `;
-          } else {
-            resultBox.classList.add('warning');
-            resultBox.classList.remove('success');
-            message.textContent = '⚠ Could not extract PO number';
-            details.innerHTML = '<small>Please enter project details manually</small>';
-          }
-
-          // Pre-fill project name if available
-          if (data.projectName) {
-            document.getElementById('projectName').value = data.projectName;
-          }
-
-          goToStep(2);
+          showInfo(result, 'success', `✓ PO Extracted: ${data.fullPO || 'N/A'}`);
         } else {
-          alert('Scan failed: ' + (await response.text()));
+          showInfo(result, 'error', `✗ ${data.message || 'Could not extract PO'}`);
         }
       } catch (error) {
-        alert('Scan error: ' + error.message);
+        showInfo(result, 'error', `✗ Error: ${error.message}`);
       } finally {
-        scanBtn.disabled = false;
-        scanBtn.innerHTML = 'Scan →';
+        extractBtn.disabled = false;
+        extractBtn.innerHTML = 'Extract PO Number';
       }
-    }
+    });
 
-    async function lookupProjectNameAuto() {
-      const projectNumber = document.getElementById('projectNumber').value.trim();
-      const projectNameInput = document.getElementById('projectName');
+    // Lookup project name
+    lookupBtn.addEventListener('click', async () => {
+      if (!projectNumber.value) return;
 
-      if (!projectNumber) {
-        return; // Silent - user might still be typing
-      }
-
-      // Show loading indicator
-      projectNameInput.value = '🔄 Looking up...';
-      projectNameInput.disabled = true;
+      lookupBtn.disabled = true;
+      lookupBtn.innerHTML = '<span class="spinner"></span>Looking up...';
+      const result = document.getElementById('lookupResult');
+      result.style.display = 'none';
 
       try {
-        const response = await fetch(`${API_BASE}/incoming/lookup-project/${projectNumber}`, {
-          credentials: 'include'
-        });
+        const response = await fetch(`${API_BASE}/api/project-name/${projectNumber.value}`);
+        const data = await response.json();
 
         if (response.ok) {
-          const data = await response.json();
-          if (data.projectName) {
-            projectNameInput.value = data.projectName;
-            console.log('Project name loaded:', data.projectName);
-          }
+          projectName.value = data.projectName || '';
+          showInfo(result, 'success', `✓ Project: ${data.projectName}`);
         } else {
-          // Clear the loading indicator if lookup failed
-          projectNameInput.value = '';
-          console.warn('Project not found');
+          showInfo(result, 'error', `✗ ${data.error || 'Project not found'}`);
         }
       } catch (error) {
-        // Clear the loading indicator if network error
-        projectNameInput.value = '';
-        console.warn('Project lookup failed:', error.message);
+        showInfo(result, 'error', `✗ Error: ${error.message}`);
       } finally {
-        projectNameInput.disabled = false;
+        lookupBtn.disabled = false;
+        lookupBtn.innerHTML = 'Lookup Project Name';
+        uploadBtn.disabled = false;
       }
-    }
+    });
 
-    function confirmJob() {
-      const projectNumber = document.getElementById('projectNumber').value.trim();
-      const poSuffix = document.getElementById('poSuffix').value.trim();
-      const projectName = document.getElementById('projectName').value.trim();
-
-      if (!projectNumber || !poSuffix) {
-        alert('Please fill in Project Number and PO Suffix');
+    // Upload
+    uploadBtn.addEventListener('click', async () => {
+      if (!photoFile || !projectNumber.value || !poSuffix.value) {
+        alert('Please complete all steps first');
         return;
       }
 
-      state.projectNumber = projectNumber;
-      state.poSuffix = poSuffix;
-      state.projectName = projectName || null; // Project name is optional - backend will look it up
+      const formData = new FormData();
+      formData.append('file', photoFile);
+      formData.append('projectNumber', projectNumber.value);
+      formData.append('poSuffix', poSuffix.value);
+      formData.append('projectName', projectName.value || '');
 
-      // Display confirmation details
-      document.getElementById('displayFullPO').textContent = `${projectNumber}-${poSuffix}`;
-      document.getElementById('displayProjectName').textContent = projectName || '(will be looked up)';
-      document.getElementById('displayFileName').textContent = projectName
-        ? `${projectNumber}-${poSuffix} ${projectName} - ${getTodayDate()}.jpg`
-        : `${projectNumber}-${poSuffix} [Project Name] - ${getTodayDate()}.jpg`;
-
-      goToStep(3);
-    }
-
-    async function finalizeJob() {
-      const finalizeBtn = document.getElementById('finalizeBtn');
-      finalizeBtn.disabled = true;
-      finalizeBtn.innerHTML = '<span class="loading"></span> Saving...';
+      uploadBtn.disabled = true;
+      uploadBtn.innerHTML = '<span class="spinner"></span>Uploading...';
+      const result = document.getElementById('uploadResult');
+      result.style.display = 'none';
 
       try {
-        const response = await fetch(`${API_BASE}/incoming/confirm_job`, {
+        const response = await fetch(`${API_BASE}/api/upload`, {
           method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            projectNumber: state.projectNumber,
-            poSuffix: state.poSuffix,
-            projectName: state.projectName,
-            comment: document.getElementById('comment').value,
-            photos: state.photos
-          })
+          body: formData
         });
+
+        const data = await response.json();
 
         if (response.ok) {
-          const data = await response.json();
-          state.entryId = data.entryId;
+          showInfo(result, 'success', `
+            <div class="info-item"><span class="info-label">✓ Uploaded Successfully</span></div>
+            <div class="info-item"><span class="info-label">File:</span> ${data.filename}</div>
+            <div class="info-item"><span class="info-label">PO:</span> ${data.poNumber}</div>
+          `);
 
-          // Show success
-          document.getElementById('entryId').textContent = data.entryId.substring(0, 8) + '...';
-          document.getElementById('successFullPO').textContent = data.fullPO;
-
-          goToStep(4);
+          // Reset after 2 seconds
+          setTimeout(() => {
+            document.getElementById('resetBtn').click();
+          }, 2000);
         } else {
-          alert('Save failed: ' + (await response.text()));
+          showInfo(result, 'error', `✗ ${data.error}: ${data.details || ''}`);
         }
       } catch (error) {
-        alert('Error: ' + error.message);
+        showInfo(result, 'error', `✗ Error: ${error.message}`);
       } finally {
-        finalizeBtn.disabled = false;
-        finalizeBtn.innerHTML = 'Complete ✓';
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = 'Upload Packing Slip';
       }
-    }
+    });
 
-    function goToStep(step) {
-      // Hide all steps
-      document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+    // Reset form
+    resetBtn.addEventListener('click', () => {
+      photoInput.value = '';
+      fileName.textContent = '';
+      projectNumber.value = '';
+      poSuffix.value = '';
+      projectName.value = '';
+      document.getElementById('notes').value = '';
+      photoFile = null;
 
-      // Show requested step (step numbering: 1=step1, 2=step2, 3=step3, 4=success)
-      const steps = ['step1', 'step2', 'step3', 'successStep'];
-      if (steps[step - 1]) {
-        document.getElementById(steps[step - 1]).classList.add('active');
-      }
+      extractBtn.disabled = true;
+      lookupBtn.disabled = true;
+      uploadBtn.disabled = true;
 
-      state.currentStep = step;
-      window.scrollTo(0, 0);
-    }
+      document.getElementById('extractResult').style.display = 'none';
+      document.getElementById('lookupResult').style.display = 'none';
+      document.getElementById('uploadResult').style.display = 'none';
+    });
 
-    function resetWorkflow() {
-      // Reset form
-      document.getElementById('photoInput').value = '';
-      document.getElementById('photoPreview').style.display = 'none';
-      document.getElementById('fileLabel').textContent = '📷 Take Photo or Tap to Upload';
-      document.getElementById('fileLabel').classList.remove('has-file');
-      document.getElementById('scanBtn').disabled = true;
-
-      document.getElementById('projectNumber').value = '';
-      document.getElementById('poSuffix').value = '';
-      document.getElementById('projectName').value = '';
-      document.getElementById('comment').value = '';
-
-      // Reset state
-      state.photoPath = null;
-      state.ocrResult = null;
-      state.projectNumber = null;
-      state.poSuffix = null;
-      state.projectName = null;
-      state.entryId = null;
-
-      goToStep(1);
-    }
-
-    async function logout() {
-      try {
-        await fetch(`${API_BASE}/auth/logout`, {
-          method: 'POST',
-          credentials: 'include'
-        });
-      } catch (error) {
-        console.error('Logout error:', error);
-      }
-
-      state.user = null;
-      document.getElementById('userInfo').textContent = '';
-      document.getElementById('logoutBtn').style.display = 'none';
-      document.getElementById('loginStep').classList.add('active');
-      document.querySelectorAll('.step').forEach((el, i) => {
-        if (i > 0) el.classList.remove('active');
-      });
-      document.getElementById('email').value = '';
-      document.getElementById('password').value = '';
-    }
-
-    function getTodayDate() {
-      const today = new Date();
-      const month = today.getMonth() + 1;
-      const day = today.getDate();
-      const year = today.getFullYear();
-      return `${month}-${day}-${year}`;
+    function showInfo(element, type, message) {
+      element.className = `info-box ${type}`;
+      element.innerHTML = message;
+      element.style.display = 'block';
     }
   </script>
 </body>

@@ -100,14 +100,36 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password required' });
+    }
+
     // Proxy to auth service
     const response = await axios.post(`${AUTH_SERVICE_URL}/api/auth/login`, {
       email,
       password
     });
 
-    req.session.user = response.data.user;
-    res.json({ success: true, user: response.data.user });
+    // Auth service returns user object directly: {email, name, role, user_id}
+    if (response.data && response.data.email) {
+      req.session.user = {
+        email: response.data.email,
+        name: response.data.name,
+        role: response.data.role,
+        user_id: response.data.user_id
+      };
+
+      // Explicitly save session
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({ error: 'Failed to save session' });
+        }
+        res.json({ success: true, user: req.session.user });
+      });
+    } else {
+      res.status(401).json({ error: 'Authentication failed' });
+    }
   } catch (error) {
     console.error('Login error:', error.message);
     res.status(401).json({ error: 'Authentication failed' });

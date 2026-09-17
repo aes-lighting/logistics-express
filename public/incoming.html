@@ -525,14 +525,14 @@
     }
 
     function showAuthenticatedUI() {
-      document.getElementById('loginStep').style.display = 'none';
+      document.getElementById('loginStep').classList.remove('active');
       document.getElementById('userInfo').textContent = `Logged in as: ${state.user.name}`;
       document.getElementById('logoutBtn').style.display = 'inline-block';
     }
 
     function showLoginStep() {
+      document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
       document.getElementById('loginStep').classList.add('active');
-      document.getElementById('step1').style.display = 'none';
     }
 
     function handlePhotoSelect(e) {
@@ -679,8 +679,8 @@
       // Hide all steps
       document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
 
-      // Show requested step
-      const steps = ['loginStep', 'step1', 'step2', 'step3', 'successStep'];
+      // Show requested step (step numbering: 1=step1, 2=step2, 3=step3, 4=success)
+      const steps = ['step1', 'step2', 'step3', 'successStep'];
       if (steps[step - 1]) {
         document.getElementById(steps[step - 1]).classList.add('active');
       }

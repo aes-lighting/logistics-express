@@ -481,7 +481,9 @@
 
     async function checkAuth() {
       try {
-        const response = await fetch(`${API_BASE}/auth/me`);
+        const response = await fetch(`${API_BASE}/auth/me`, {
+          credentials: 'include'
+        });
         if (response.ok) {
           const data = await response.json();
           state.user = data.user;
@@ -506,6 +508,7 @@
         errorBox.classList.remove('show');
         const response = await fetch(`${API_BASE}/auth/login`, {
           method: 'POST',
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
         });
@@ -569,6 +572,7 @@
 
         const response = await fetch(`${API_BASE}/incoming/scan_page`, {
           method: 'POST',
+          credentials: 'include',
           body: formData
         });
 
@@ -617,54 +621,63 @@
       }
     }
 
-async function lookupProjectNameAuto() {
-  const projectNumber = document.getElementById('projectNumber').value.trim();
+    async function lookupProjectNameAuto() {
+      const projectNumber = document.getElementById('projectNumber').value.trim();
+      const projectNameInput = document.getElementById('projectName');
 
-  if (!projectNumber) {
-    return; // Silent - user might still be typing
-  }
-
-  try {
-    const fileServiceUrl = 'https://file-service-production-4d03.up.railway.app';
-    const apiKey = 'yvgDtDvqWY2L8A5gb8k4btePZRW20b9m3ur0vgpinZDoF1pcqgjwmhofS8Z0Yxfb';
-    
-    const response = await fetch(`${fileServiceUrl}/api/projects/${projectNumber}`, {
-      headers: {
-        'X-API-Key': apiKey
+      if (!projectNumber) {
+        return; // Silent - user might still be typing
       }
-    });
 
-    if (response.ok) {
-      const data = await response.json();
-      if (data.projectName) {
-        document.getElementById('projectName').value = data.projectName;
-        console.log('Project name loaded from file service:', data.projectName);
+      // Show loading indicator
+      projectNameInput.value = '🔄 Looking up...';
+      projectNameInput.disabled = true;
+
+      try {
+        const response = await fetch(`${API_BASE}/incoming/lookup-project/${projectNumber}`, {
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.projectName) {
+            projectNameInput.value = data.projectName;
+            console.log('Project name loaded:', data.projectName);
+          }
+        } else {
+          // Clear the loading indicator if lookup failed
+          projectNameInput.value = '';
+          console.warn('Project not found');
+        }
+      } catch (error) {
+        // Clear the loading indicator if network error
+        projectNameInput.value = '';
+        console.warn('Project lookup failed:', error.message);
+      } finally {
+        projectNameInput.disabled = false;
       }
     }
-    // Silently fail - user can enter manually if lookup doesn't work
-  } catch (error) {
-    console.warn('Project lookup failed:', error.message);
-  }
-}
 
     function confirmJob() {
       const projectNumber = document.getElementById('projectNumber').value.trim();
       const poSuffix = document.getElementById('poSuffix').value.trim();
       const projectName = document.getElementById('projectName').value.trim();
 
-      if (!projectNumber || !poSuffix || !projectName) {
-        alert('Please fill in all required fields');
+      if (!projectNumber || !poSuffix) {
+        alert('Please fill in Project Number and PO Suffix');
         return;
       }
 
       state.projectNumber = projectNumber;
       state.poSuffix = poSuffix;
-      state.projectName = projectName;
+      state.projectName = projectName || null; // Project name is optional - backend will look it up
 
       // Display confirmation details
       document.getElementById('displayFullPO').textContent = `${projectNumber}-${poSuffix}`;
-      document.getElementById('displayProjectName').textContent = projectName;
-      document.getElementById('displayFileName').textContent = `${projectNumber}-${poSuffix} ${projectName} - ${getTodayDate()}.jpg`;
+      document.getElementById('displayProjectName').textContent = projectName || '(will be looked up)';
+      document.getElementById('displayFileName').textContent = projectName
+        ? `${projectNumber}-${poSuffix} ${projectName} - ${getTodayDate()}.jpg`
+        : `${projectNumber}-${poSuffix} [Project Name] - ${getTodayDate()}.jpg`;
 
       goToStep(3);
     }
@@ -677,6 +690,7 @@ async function lookupProjectNameAuto() {
       try {
         const response = await fetch(`${API_BASE}/incoming/confirm_job`, {
           method: 'POST',
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             projectNumber: state.projectNumber,
@@ -746,7 +760,10 @@ async function lookupProjectNameAuto() {
 
     async function logout() {
       try {
-        await fetch(`${API_BASE}/auth/logout`, { method: 'POST' });
+        await fetch(`${API_BASE}/auth/logout`, {
+          method: 'POST',
+          credentials: 'include'
+        });
       } catch (error) {
         console.error('Logout error:', error);
       }

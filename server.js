@@ -189,27 +189,6 @@ app.post('/api/upload', loginRequired, upload.single('file'), (req, res) => {
 // INCOMING INVENTORY ENDPOINTS
 // ============================================
 
-app.get('/api/incoming/project/:projectNumber', loginRequired, async (req, res) => {
-  try {
-    const { projectNumber } = req.params;
-
-    if (!projectNumber) {
-      return res.status(400).json({ error: 'Project number required' });
-    }
-
-    // Look up project name from file service
-    const projectName = await fileService.getProjectName(projectNumber);
-
-    if (projectName) {
-      res.json({ success: true, projectNumber, projectName });
-    } else {
-      res.status(404).json({ error: 'Project not found' });
-    }
-  } catch (error) {
-    console.error('Project lookup error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
 
 app.post('/api/incoming/scan_page', loginRequired, upload.single('photo'), async (req, res) => {
   try {
@@ -230,30 +209,47 @@ app.post('/api/incoming/scan_page', loginRequired, upload.single('photo'), async
       };
     }
 
-    // If PO was extracted, look up project name from file service
-    let projectName = null;
-    if (ocrResult.success && ocrResult.projectNumber) {
-      projectName = await fileService.getProjectName(ocrResult.projectNumber);
-    }
-
     // Store photo and PO data in session
     req.session.slip.photos.push(photoPath);
     req.session.slip.poData.push({
       pageNumber: req.session.slip.photos.length,
-      ...ocrResult,
-      projectName: projectName
+      ...ocrResult
     });
 
     res.json({
       success: true,
       pageNumber: req.session.slip.photos.length,
       ocrResult: ocrResult,
-      projectName: projectName,
       message: ocrResult.success ? 'PO extracted successfully' : 'Could not extract PO number - please verify manually'
     });
   } catch (error) {
     console.error('Scan error:', error);
     res.status(500).json({ error: error.message || 'Scan failed' });
+  }
+});
+
+app.get('/api/incoming/lookup-project/:projectNumber', loginRequired, async (req, res) => {
+  try {
+    const { projectNumber } = req.params;
+    if (!projectNumber) {
+      return res.status(400).json({ error: 'Project number required' });
+    }
+
+    const response = await axios.get(`${fileService.FILE_SERVICE_URL}/api/projects/${projectNumber}`, {
+      headers: {
+        'X-API-Key': process.env.FILE_SERVICE_API_KEY || 'yvgDtDvqWY2L8A5gb8k4btePZRW20b9m3ur0vgpinZDoF1pcqgjwmhofS8Z0Yxfb'
+      },
+      timeout: 5000
+    });
+
+    if (response.data && response.data.projectName) {
+      res.json({ projectName: response.data.projectName });
+    } else {
+      res.status(404).json({ error: 'Project not found' });
+    }
+  } catch (error) {
+    console.warn(`Project lookup failed:`, error.message);
+    res.status(500).json({ error: 'Could not look up project' });
   }
 });
 
@@ -265,30 +261,40 @@ app.post('/api/incoming/confirm_job', loginRequired, async (req, res) => {
       return res.status(400).json({ error: 'No slip data in session' });
     }
 
-    if (!projectNumber || !poSuffix || !projectName) {
-      return res.status(400).json({ error: 'Project number, PO suffix, and project name are required' });
+    if (!projectNumber || !poSuffix) {
+      return res.status(400).json({ error: 'Project number and PO suffix are required' });
     }
 
-    // Generate filename with proper naming convention
-    const filename = fileNaming.generatePackingSlipFilename(projectNumber, poSuffix, projectName);
-    if (!filename) {
-      return res.status(400).json({ error: 'Invalid project information for filename generation' });
+    // Format PO number for file service
+    const poNumber = `${projectNumber}-${poSuffix}`;
+
+    // Look up project name from file service if not provided
+    let finalProjectName = projectName;
+    if (!finalProjectName) {
+      try {
+        const response = await axios.get(`${fileService.FILE_SERVICE_URL}/api/projects/${projectNumber}`, {
+          headers: {
+            'X-API-Key': process.env.FILE_SERVICE_API_KEY || 'yvgDtDvqWY2L8A5gb8k4btePZRW20b9m3ur0vgpinZDoF1pcqgjwmhofS8Z0Yxfb'
+          },
+          timeout: 5000
+        });
+        if (response.data && response.data.projectName) {
+          finalProjectName = response.data.projectName;
+        }
+      } catch (err) {
+        console.warn(`Failed to look up project name from file service:`, err.message);
+      }
     }
 
-    // Create inventory entry first to get entryId
-    const entryId = inventory.addEntry({
-      projectNumber: projectNumber,
-      poSuffix: poSuffix,
-      fullPO: `${projectNumber}-${poSuffix}`,
-      projectName: projectName,
-      scannedBy: req.session.user.email,
-      status: 'received',
-      confirmedAt: new Date().toISOString()
-    });
+    if (!finalProjectName) {
+      return res.status(400).json({ error: 'Project name could not be determined. Please provide it or check the project number.' });
+    }
+
+    // Generate filename with proper naming convention using the correct project name
+    const filename = fileNaming.generatePackingSlipFilename(projectNumber, poSuffix, finalProjectName);
 
     // Upload photos to file service
     const uploadedPaths = [];
-    const directoryPath = fileNaming.generateOrganizedFolderPath(projectNumber);
 
     for (let i = 0; i < req.session.slip.photos.length; i++) {
       const photoPath = req.session.slip.photos[i];
@@ -298,24 +304,34 @@ app.post('/api/incoming/confirm_job', loginRequired, async (req, res) => {
       try {
         const fileBuffer = fs.readFileSync(photoPath);
         const uploadResult = await fileService.uploadFile(
-          entryId,
-          directoryPath,
           uploadFilename,
-          fileBuffer
+          fileBuffer,
+          poNumber
         );
 
         if (uploadResult) {
-          console.log(`File uploaded successfully: ${uploadFilename}`);
-          uploadedPaths.push(uploadResult.path || `${directoryPath}/${uploadFilename}`);
+          console.log(`File uploaded successfully: ${uploadFilename}`, uploadResult);
+          uploadedPaths.push(uploadResult.file || uploadFilename);
         } else {
           console.warn(`File upload returned null for ${uploadFilename}, continuing...`);
-          uploadedPaths.push(`${directoryPath}/${uploadFilename}`);
+          uploadedPaths.push(uploadFilename);
         }
       } catch (err) {
         console.error(`Failed to upload photo ${uploadFilename}:`, err);
-        uploadedPaths.push(`${directoryPath}/${uploadFilename}`);
+        uploadedPaths.push(uploadFilename);
       }
     }
+
+    // Create inventory entry with final project name
+    const entryId = inventory.addEntry({
+      projectNumber: projectNumber,
+      poSuffix: poSuffix,
+      fullPO: poNumber,
+      projectName: finalProjectName,
+      scannedBy: req.session.user.email,
+      status: 'received',
+      confirmedAt: new Date().toISOString()
+    });
 
     // Update inventory entry with uploaded file paths
     inventory.updateEntry(entryId, {
@@ -328,8 +344,9 @@ app.post('/api/incoming/confirm_job', loginRequired, async (req, res) => {
     res.json({
       success: true,
       entryId: entryId,
-      fullPO: `${projectNumber}-${poSuffix}`,
+      fullPO: poNumber,
       filename: filename,
+      projectName: finalProjectName,
       savedPhotos: uploadedPaths,
       message: 'Packing slip uploaded to file service'
     });

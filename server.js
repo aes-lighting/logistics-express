@@ -15,6 +15,9 @@ const Tesseract = require('tesseract.js');
 // Multer with memory storage (no disk persistence)
 const upload = multer({ storage: multer.memoryStorage() });
 
+// Serve static files from public folder
+app.use(express.static('public'));
+
 // Helper to get today's date in MM-DD-YYYY format
 function getTodayDate() {
   const today = new Date();

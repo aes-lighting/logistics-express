@@ -239,6 +239,7 @@ app.post('/api/incoming/scan_page', upload.single('photo'), async (req, res) => 
     res.json({
       success: true,
       pageNumber: req.session.slip.photos.length,
+      photoPath: photoPath,
       ocrResult: ocrResult,
       message: 'Photo accepted (OCR disabled for testing)'
     });
@@ -275,10 +276,13 @@ app.get('/api/incoming/lookup-project/:projectNumber', loginRequired, async (req
 
 app.post('/api/incoming/confirm_job', async (req, res) => {
   try {
-    const { projectNumber, poSuffix, projectName } = req.body;
+    const { projectNumber, poSuffix, projectName, photos } = req.body;
 
-    if (!req.session.slip || !req.session.slip.photos || req.session.slip.photos.length === 0) {
-      return res.status(400).json({ error: 'No slip data in session' });
+    // Use photos from request body, or fall back to session (for backward compatibility)
+    const photoList = photos || (req.session.slip && req.session.slip.photos) || [];
+
+    if (!photoList || photoList.length === 0) {
+      return res.status(400).json({ error: 'No photos provided' });
     }
 
     if (!projectNumber || !poSuffix) {
@@ -316,8 +320,8 @@ app.post('/api/incoming/confirm_job', async (req, res) => {
     // Upload photos to file service
     const uploadedPaths = [];
 
-    for (let i = 0; i < req.session.slip.photos.length; i++) {
-      const photoPath = req.session.slip.photos[i];
+    for (let i = 0; i < photoList.length; i++) {
+      const photoPath = photoList[i];
       const extension = path.extname(photoPath);
       const uploadFilename = i === 0 ? filename : `${filename.replace('.jpg', '')}_page_${i + 1}${extension}`;
 
@@ -348,7 +352,7 @@ app.post('/api/incoming/confirm_job', async (req, res) => {
       poSuffix: poSuffix,
       fullPO: poNumber,
       projectName: finalProjectName,
-      scannedBy: req.session.user.email,
+      scannedBy: req.session?.user?.email || 'test-user',
       status: 'received',
       confirmedAt: new Date().toISOString()
     });

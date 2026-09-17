@@ -580,6 +580,12 @@
           const data = await response.json();
           state.ocrResult = data.ocrResult;
 
+          // Track the photo path for later upload
+          if (!state.photos) {
+            state.photos = [];
+          }
+          state.photos.push(data.photoPath);
+
           // Display OCR results
           const resultBox = document.getElementById('ocrResultBox');
           const message = document.getElementById('ocrMessage');
@@ -696,7 +702,8 @@
             projectNumber: state.projectNumber,
             poSuffix: state.poSuffix,
             projectName: state.projectName,
-            comment: document.getElementById('comment').value
+            comment: document.getElementById('comment').value,
+            photos: state.photos
           })
         });
 

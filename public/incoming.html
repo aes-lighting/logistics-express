@@ -246,6 +246,11 @@
           <input type="text" id="projectName" placeholder="Looking up...">
         </div>
 
+        <div class="form-group">
+          <label for="manufacturer">Manufacturer</label>
+          <input type="text" id="manufacturer" placeholder="e.g., GE, Siemens">
+        </div>
+
         <button type="button" id="lookupBtn" disabled>Lookup Project Name</button>
         <div class="info-box" id="lookupResult" style="display:none;"></div>
       </div>
@@ -279,6 +284,7 @@
     const projectNumber = document.getElementById('projectNumber');
     const poSuffix = document.getElementById('poSuffix');
     const projectName = document.getElementById('projectName');
+    const manufacturer = document.getElementById('manufacturer');
     const lookupBtn = document.getElementById('lookupBtn');
     const uploadBtn = document.getElementById('uploadBtn');
     const resetBtn = document.getElementById('resetBtn');
@@ -307,8 +313,12 @@
       checkUploadReady();
     });
 
+    manufacturer.addEventListener('input', () => {
+      checkUploadReady();
+    });
+
     function checkUploadReady() {
-      uploadBtn.disabled = !projectNumber.value || !poSuffix.value;
+      uploadBtn.disabled = !projectNumber.value || !poSuffix.value || !manufacturer.value;    
     }
 
     // Extract PO from image
@@ -379,8 +389,8 @@
 
     // Upload
     uploadBtn.addEventListener('click', async () => {
-      if (!projectNumber.value || !poSuffix.value) {
-        alert('Please enter Project Number and PO Suffix');
+      if (!projectNumber.value || !poSuffix.value || !manufacturer.value){
+        alert('Please enter Project Number, PO Suffix, and Manufacturer');
         return;
       }
 
@@ -394,6 +404,7 @@
       formData.append('projectNumber', projectNumber.value);
       formData.append('poSuffix', poSuffix.value);
       formData.append('projectName', projectName.value || '');
+      formData.append('manufacturer', manufacturer.value);
 
       uploadBtn.disabled = true;
       uploadBtn.innerHTML = '<span class="spinner"></span>Uploading...';
@@ -437,6 +448,7 @@
       projectNumber.value = '';
       poSuffix.value = '';
       projectName.value = '';
+      manufacturer.value = '';
       document.getElementById('notes').value = '';
       photoFile = null;
 

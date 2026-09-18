@@ -125,17 +125,17 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       return res.status(400).json({ error: 'No file provided' });
     }
 
-    const { projectNumber, poSuffix, projectName } = req.body;
+    const { projectNumber, poSuffix, manufacturer, projectName } = req.body;
 
-    if (!projectNumber || !poSuffix) {
-      return res.status(400).json({ error: 'Project number and PO suffix required' });
+    if (!projectNumber || !poSuffix || !manufacturer) {
+      return res.status(400).json({ error: 'Project number, PO suffix, and manufacturer required' });
     }
 
     // Generate filename with proper naming convention
     const today = getTodayDate();
     const filename = projectName
-      ? `${projectNumber}-${poSuffix} ${projectName} - ${today}.jpg`
-      : `${projectNumber}-${poSuffix} - ${today}.jpg`;
+      ? `${manufacturer} ${projectNumber}-${poSuffix} ${projectName} ${today}.jpg`
+      : `${manufacturer} ${projectNumber}-${poSuffix} ${today}.jpg`;
 
     // Upload to file service
     const fileServiceUrl = process.env.FILE_SERVICE_URL || 'http://71.172.107.128:3001';

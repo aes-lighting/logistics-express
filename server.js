@@ -7,7 +7,7 @@ const FormData = require('form-data');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 
 // Tesseract.js for OCR
 const Tesseract = require('tesseract.js');
@@ -94,8 +94,8 @@ app.get('/api/project-name/:projectNumber', async (req, res) => {
     }
 
     // Query file service for project name
-    const fileServiceUrl = process.env.FILE_SERVICE_URL || 'http://file-service.railway.internal:3000';
-    const apiKey = process.env.FILE_SERVICE_API_KEY || 'yvgDtDvqWY2L8A5gb8k4btePZRW20b9m3ur0vgpinZDoF1pcqgjwmhofS8Z0Yxfb';
+    const fileServiceUrl = process.env.FILE_SERVICE_URL || 'http://71.172.107.128:3001';
+    const apiKey = process.env.FILE_SERVICE_API_KEY || 'yvgDtDvqMY2L8A5gb8k4btePZRW20b9m3ur0vgpinZDoF1pcqg3jwmhofS8Z0YxfD';
 
     const response = await axios.get(`${fileServiceUrl}/api/projects/${projectNumber}`, {
       headers: {
@@ -138,25 +138,27 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       : `${projectNumber}-${poSuffix} - ${today}.jpg`;
 
     // Upload to file service
-    const fileServiceUrl = process.env.FILE_SERVICE_URL || 'http://file-service.railway.internal:3000';
-    const apiKey = process.env.FILE_SERVICE_API_KEY || 'yvgDtDvqWY2L8A5gb8k4btePZRW20b9m3ur0vgpinZDoF1pcqgjwmhofS8Z0Yxfb';
+    const fileServiceUrl = process.env.FILE_SERVICE_URL || 'http://71.172.107.128:3001';
+    const apiKey = process.env.FILE_SERVICE_API_KEY || 'yvgDtDvqMY2L8A5gb8k4btePZRW20b9m3ur0vgpinZDoF1pcqg3jwmhofS8Z0YxfD';
 
     const formData = new FormData();
     formData.append('file', req.file.buffer, {
       filename: filename,
       contentType: req.file.mimetype
     });
-    formData.append('poNumber', `${projectNumber}-${poSuffix}`);
+    formData.append('projectNumber', projectNumber);
+    formData.append('fileType', 'packing_slip');
+    formData.append('filename', filename);
 
     const uploadResponse = await axios.post(
-      `${fileServiceUrl}/api/upload/packing-slip`,
+      `${fileServiceUrl}/api/upload`,
       formData,
       {
         headers: {
           ...formData.getHeaders(),
           'X-API-Key': apiKey
         },
-        timeout: 30000
+        timeout: 60000
       }
     );
 

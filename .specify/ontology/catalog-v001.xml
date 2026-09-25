@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog" prefer="public">
+  <uri name="https://aes-lighting.internal/ns/logistics" uri="logistics_domain.ttl"/>
+  <uri name="https://aes-lighting.internal/ns/logistics/generated" uri="logistics_domain.generated.ttl"/>
+  <uri name="https://aes-lighting.internal/ns/logistics/axioms" uri="logistics_domain.axioms.ttl"/>
+</catalog>

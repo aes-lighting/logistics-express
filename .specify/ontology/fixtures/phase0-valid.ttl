@@ -1,0 +1,17 @@
+# Phase-0 fixture — valid packing-slip graph projection
+
+@prefix log:  <https://aes-lighting.internal/ns/logistics#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+log:fixture_po_001 a log:PurchaseOrderRef ;
+    log:projectNumber "25066" ;
+    log:poSuffix "99" ;
+    log:fullPO "25066-99" .
+
+log:fixture_upload_001 a log:FileServiceUpload ;
+    log:manufacturer "Acme Lighting" ;
+    log:fullPO "25066-99" ;
+    log:fileType "packing_slip" .
+
+log:fixture_capture_001 a log:PackingSlipCapture ;
+    log:extractedText "PO 25066-99 Acme Lighting" .

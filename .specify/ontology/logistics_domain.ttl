@@ -1,0 +1,17 @@
+# Logistics Domain Ontology (catalog)
+@prefix log:  <https://aes-lighting.internal/ns/logistics#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix dct:  <http://purl.org/dc/terms/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+<https://aes-lighting.internal/ns/logistics>
+    a owl:Ontology ;
+    dct:title "AES Logistics Express Domain Ontology" ;
+    dct:description "Formal shared conceptualization for logistics-express. Imports generated structural TBox and curated axioms. Phase 0 foundation." ;
+    dct:creator "logistics-express Spec Kit" ;
+    owl:versionInfo "0.1.0-phase0" ;
+    owl:versionIRI <https://aes-lighting.internal/ns/logistics/0.1.0-phase0> ;
+    rdfs:comment "Normative for all agents. See .specify/spec.md. Dual-surface: LiveSurface vs DeferredDomain." ;
+    owl:imports <https://aes-lighting.internal/ns/logistics/generated> ,
+                <https://aes-lighting.internal/ns/logistics/axioms> .

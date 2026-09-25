@@ -1,0 +1,22 @@
+@prefix log:  <https://aes-lighting.internal/ns/logistics#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix dct:  <http://purl.org/dc/terms/> .
+
+<https://aes-lighting.internal/ns/logistics/axioms>
+    a owl:Ontology ;
+    dct:title "logistics-express curated axioms" ;
+    owl:versionInfo "0.1.0-phase0" ;
+    rdfs:comment "PolicyNoSecretsInGit PolicyDualSurfaceHonesty PolicyNoInventLiveRoutesFromLib OntologyRequired" .
+
+log:LiveSurface owl:disjointWith log:DeferredDomain .
+log:PublicIncomingSurface owl:disjointWith log:AuthenticatedAdminSurface .
+
+log:PolicyNoSecretsInGit a owl:NamedIndividual ;
+    rdfs:comment "Secrets must not be committed; no hardcoded API key defaults." .
+log:PolicyDualSurfaceHonesty a owl:NamedIndividual ;
+    rdfs:comment "LiveSurface and DeferredDomain must both be documented and not conflated." .
+log:PolicyNoInventLiveRoutesFromLib a owl:NamedIndividual ;
+    rdfs:comment "Do not invent operable HTTP routes from unwired lib modules." .
+log:OntologyRequired a owl:NamedIndividual ;
+    rdfs:comment "Domain changes must update ontology in the same changeset." .

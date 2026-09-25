@@ -1,0 +1,48 @@
+@prefix log:  <https://aes-lighting.internal/ns/logistics#> .
+@prefix sh:   <http://www.w3.org/ns/shacl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+log:PurchaseOrderRefShape a sh:NodeShape ;
+    sh:targetClass log:PurchaseOrderRef ;
+    sh:property [
+        sh:path log:projectNumber ;
+        sh:datatype xsd:string ;
+        sh:pattern "^\\d{5}$" ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path log:poSuffix ;
+        sh:datatype xsd:string ;
+        sh:pattern "^\\d{2}$" ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path log:fullPO ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ; sh:maxCount 1 ;
+    ] .
+
+log:FileServiceUploadShape a sh:NodeShape ;
+    sh:targetClass log:FileServiceUpload ;
+    sh:property [
+        sh:path log:manufacturer ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+    ] ;
+    sh:property [
+        sh:path log:fullPO ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+    ] ;
+    sh:property [
+        sh:path log:fileType ;
+        sh:datatype xsd:string ;
+        sh:hasValue "packing_slip" ;
+    ] .
+
+log:PackingSlipCaptureShape a sh:NodeShape ;
+    sh:targetClass log:PackingSlipCapture ;
+    sh:property [
+        sh:path log:extractedText ;
+        sh:datatype xsd:string ;
+    ] .

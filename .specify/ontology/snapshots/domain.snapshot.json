@@ -1,0 +1,47 @@
+{
+  "version": "0.1.0-phase0",
+  "source": "reverse-engineered from server.js + lib/*",
+  "roles": [
+    "driver",
+    "pm",
+    "admin"
+  ],
+  "emailDomain": "@aes-energy.com",
+  "locations": [
+    "Warehouse",
+    "Staging",
+    "Loading Bay",
+    "Back Tent"
+  ],
+  "inventoryStatuses": [
+    "received",
+    "flagged",
+    "completed",
+    "shipped"
+  ],
+  "deliveryStatuses": [
+    "scheduled",
+    "in_progress",
+    "completed"
+  ],
+  "livePoRegex": "(\\d{5})\\s*[-\\s]\\s*(\\d{2})",
+  "fileType": "packing_slip",
+  "entities": {
+    "live": [
+      "PackingSlipCapture",
+      "PurchaseOrderRef",
+      "Project",
+      "Manufacturer",
+      "FileServiceUpload"
+    ],
+    "deferred": [
+      "User",
+      "InventoryEntry",
+      "Delivery",
+      "JobPmDirectory",
+      "WarehouseLocation",
+      "QrTicket",
+      "DeliveryTicket"
+    ]
+  }
+}
